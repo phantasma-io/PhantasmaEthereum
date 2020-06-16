@@ -156,7 +156,7 @@ library SafeMath {
 contract Phantasma {
 
     uint256 constant private MAX_UINT256 = 2**256 - 1;
-    mapping (address => uint256) public balances;
+    mapping (address => uint256) public _balances;
     mapping (address => mapping (address => uint256)) public allowed;
 
 	uint256 private _totalSupply;
