@@ -180,18 +180,18 @@ contract Phantasma {
     }
 
     function transfer(address _to, uint256 _value) public returns (bool success) {
-        require(balances[msg.sender] >= _value);
-        balances[msg.sender].sub(_value);
-        balances[_to].add(_value);
+        require(_balances[msg.sender] >= _value);
+        _balances[msg.sender].sub(_value);
+        _balances[_to].add(_value);
         emit Transfer(msg.sender, _to, _value); //solhint-disable-line indent, no-unused-vars
         return true;
     }
 
     function transferFrom(address _from, address _to, uint256 _value) public returns (bool success) {
         uint256 allowance = allowed[_from][msg.sender];
-        require(balances[_from] >= _value && allowance >= _value);
-        balances[_to].add(_value);
-        balances[_from].sub(_value);
+        require(_balances[_from] >= _value && allowance >= _value);
+        _balances[_to].add(_value);
+        _balances[_from].sub(_value);
         if (allowance < MAX_UINT256) {
             allowed[_from][msg.sender] -= _value;
         }
@@ -200,7 +200,7 @@ contract Phantasma {
     }
 
     function balanceOf(address _owner) public view returns (uint256 balance) {
-        return balances[_owner];
+        return _balances[_owner];
     }
 
     function approve(address _spender, uint256 _value) public returns (bool success) {
@@ -226,7 +226,7 @@ contract Phantasma {
 
     function swapOut(address account, uint256 amount) public returns (bool success) {
 		require(msg.sender == _producer);
-		require(balances[account] >= amount);
+		require(_balances[account] >= amount);
 		
         _totalSupply.sub(amount);
         _balances[account].sub(amount);
