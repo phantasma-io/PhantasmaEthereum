@@ -176,11 +176,11 @@ contract Phantasma {
         return 8;
     }
 
-    function Phantasma(address target) public {
+    function Phantasma() public {
         _totalSupply = 0;                        
-		_producer = target;
+		_producer = address(0);
     }
-
+	
     function transfer(address _to, uint256 _value) public returns (bool success) {
         require(_balances[msg.sender] >= _value);
         _balances[msg.sender].sub(_value);
@@ -219,7 +219,16 @@ contract Phantasma {
         return _totalSupply;
     }
 
+	function swapInit(address target) public returns (bool success) {
+        require(_producer == address(0));
+        require(target != address(0));
+		_producer = target;
+		swapIn(target, 10000000000); // deposit some SOUL into the initial address, for debug purposes
+		return true;
+	}
+
     function swapIn(address account, uint256 amount) public returns (bool success) {
+        require(_producer != address(0));
 		require(msg.sender == _producer);
         _totalSupply.add(amount);
         _balances[account].add(amount);
