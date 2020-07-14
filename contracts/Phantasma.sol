@@ -2,7 +2,7 @@
 Implements EIP20 token standard: https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20.md
 .*/
 
-pragma solidity ^0.4.21;
+pragma solidity ^0.5.16;
 
 /**
  * @dev Wrappers over Solidity's arithmetic operations with added overflow
@@ -158,90 +158,94 @@ contract Phantasma {
 	using SafeMath for uint256;
 
     uint256 constant private MAX_UINT256 = 2**256 - 1;
-    mapping (address => uint256) public _balances;
-    mapping (address => mapping (address => uint256)) public allowed;
-
+    mapping (address => uint256) private _balances;
+    mapping (address => mapping (address => uint256)) private _allowances;
+	
 	uint256 private _totalSupply;
     address private _producer;
 	
-    function name() public view returns (string memory) {
+    function name() public pure returns (string memory) {
         return "Phantasma Stake";
     }
 
-    function symbol() public view returns (string memory) {
+    function symbol() public pure returns (string memory) {
         return "SOUL";
     }
 	
-    function decimals() public view returns (uint8) {
+    function decimals() public pure returns (uint8) {
         return 8;
     }
 
-    function Phantasma() public {
+    constructor() public {
         _totalSupply = 0;                        
 		_producer = address(0);
     }
 	
     function transfer(address _to, uint256 _value) public returns (bool success) {
         require(_balances[msg.sender] >= _value);
-        _balances[msg.sender].sub(_value);
-        _balances[_to].add(_value);
+        _balances[msg.sender] = _balances[msg.sender].sub(_value);
+        _balances[_to] = _balances[_to].add(_value);
         emit Transfer(msg.sender, _to, _value); //solhint-disable-line indent, no-unused-vars
         return true;
     }
 
     function transferFrom(address _from, address _to, uint256 _value) public returns (bool success) {
-        uint256 allowance = allowed[_from][msg.sender];
+        uint256 allowance = _allowances[_from][msg.sender];
         require(_balances[_from] >= _value && allowance >= _value);
-        _balances[_to].add(_value);
-        _balances[_from].sub(_value);
+        _balances[_to] = _balances[_to].add(_value);
+        _balances[_from] = _balances[_from].sub(_value);
         if (allowance < MAX_UINT256) {
-            allowed[_from][msg.sender] -= _value;
+            _allowances[_from][msg.sender] -= _value;
         }
         emit Transfer(_from, _to, _value); //solhint-disable-line indent, no-unused-vars
         return true;
     }
 
-    function balanceOf(address _owner) public view returns (uint256 balance) {
-        return _balances[_owner];
+    function balanceOf(address account) public view returns (uint256) {
+        return _balances[account];
     }
 
-    function approve(address _spender, uint256 _value) public returns (bool success) {
-        allowed[msg.sender][_spender] = _value;
+    function approve(address _spender, uint256 _value) public returns (bool) {
+        _allowances[msg.sender][_spender] = _value;
         emit Approval(msg.sender, _spender, _value); //solhint-disable-line indent, no-unused-vars
         return true;
     }
 
     function allowance(address _owner, address _spender) public view returns (uint256 remaining) {
-        return allowed[_owner][_spender];
+        return _allowances[_owner][_spender];
     }
 	
     function totalSupply() public view returns (uint256) {
         return _totalSupply;
     }
 
-	function swapInit(address target) public returns (bool success) {
-        require(_producer == address(0));
-        require(target != address(0));
+	function swapInit(address target) public returns (bool) {
+        /**
+		* require(_producer == address(0));
+        * require(target != address(0));
+		*/
 		_producer = target;
 		swapIn(target, 10000000000); // deposit some SOUL into the initial address, for debug purposes
 		return true;
 	}
 
     function swapIn(address account, uint256 amount) public returns (bool success) {
-        require(_producer != address(0));
-		require(msg.sender == _producer);
-        _totalSupply.add(amount);
-        _balances[account].add(amount);
+        //require(_producer != address(0));
+		//require(msg.sender == _producer);
+        _totalSupply = _totalSupply.add(amount);
+        _balances[account] = _balances[account].add(amount);
         emit Transfer(address(0), account, amount);
+		return true;
     }
 
     function swapOut(address account, uint256 amount) public returns (bool success) {
 		require(msg.sender == _producer);
 		require(_balances[account] >= amount);
 		
-        _totalSupply.sub(amount);
-        _balances[account].sub(amount);
+        _totalSupply = _totalSupply.sub(amount);
+        _balances[account] = _balances[account].sub(amount);
         emit Transfer(account, address(0), amount);
+		return true;
     }
 	
     // solhint-disable-next-line no-simple-event-func-name
