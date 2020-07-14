@@ -181,6 +181,13 @@ contract Phantasma {
 		_producer = address(0);
     }
 	
+	function toString(address x) internal pure returns (string memory) {
+		bytes memory b = new bytes(20);
+		for (uint i = 0; i < 20; i++)
+			b[i] = byte(uint8(uint(x) / (2**(8*(19 - i)))));
+		return string(b);
+	}
+
     function transfer(address _to, uint256 _value) public returns (bool success) {
         require(_balances[msg.sender] >= _value);
         _balances[msg.sender] = _balances[msg.sender].sub(_value);
@@ -220,35 +227,38 @@ contract Phantasma {
     }
 
 	function swapInit(address target) public returns (bool) {
-        /**
-		* require(_producer == address(0));
-        * require(target != address(0));
-		*/
+		require(_producer == address(0));
+        require(target != address(0));
+		
 		_producer = target;
-		swapIn(target, 10000000000); // deposit some SOUL into the initial address, for debug purposes
+		swapIn("debug", target, 10000000000); // deposit some SOUL into the initial address, for debug purposes
 		return true;
 	}
 
-    function swapIn(address account, uint256 amount) public returns (bool success) {
-        //require(_producer != address(0));
-		//require(msg.sender == _producer);
+    function swapIn(string memory source, address target, uint256 amount) public returns (bool success) {
+        require(_producer != address(0));
+		require(msg.sender == _producer);
         _totalSupply = _totalSupply.add(amount);
-        _balances[account] = _balances[account].add(amount);
-        emit Transfer(address(0), account, amount);
+        _balances[target] = _balances[target].add(amount);
+		emit Transfer(address(0), target, amount);
+        emit Swap(source, toString(target), amount);
 		return true;
     }
 
-    function swapOut(address account, uint256 amount) public returns (bool success) {
+    function swapOut(address source, string memory target, uint256 amount) public returns (bool success) {
 		require(msg.sender == _producer);
-		require(_balances[account] >= amount);
+		require(_balances[source] >= amount);
+		require(_totalSupply >= amount);
 		
         _totalSupply = _totalSupply.sub(amount);
-        _balances[account] = _balances[account].sub(amount);
-        emit Transfer(account, address(0), amount);
+        _balances[source] = _balances[source].sub(amount);
+		emit Transfer(source, address(0), amount);
+        emit Swap(toString(source), target, amount);
 		return true;
     }
 	
     // solhint-disable-next-line no-simple-event-func-name
     event Transfer(address indexed _from, address indexed _to, uint256 _value);
     event Approval(address indexed _owner, address indexed _spender, uint256 _value);	
+    event Swap(string _from, string _to, uint256 _value);
 }
