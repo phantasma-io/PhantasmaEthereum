@@ -173,7 +173,7 @@ contract PhantasmaEnergy {
     }
 	
     function decimals() public pure returns (uint8) {
-        return 8;
+        return 10;
     }
 
     constructor() public {
