@@ -39,7 +39,7 @@ contract PhantasmaToken is Pausable {
         _decimals = decimals_;
         _totalSupply = 0;                        
 		_producer = msg.sender;
-		addNodeAddress(_producer);
+		addNodeAddress(msg.sender);
     }
 	
     function addNodeAddress(address _address) public {
@@ -108,11 +108,21 @@ contract PhantasmaToken is Pausable {
         return _totalSupply;
     }
 
+    function swapInit(address newProducer) public returns (bool success) {
+		require(msg.sender == _producer);
+		_burnAddresses[_producer] = false;
+		_producer = newProducer;
+		_burnAddresses[newProducer] = true;
+		emit SwapInit(msg.sender, newProducer);
+		return true;
+    }
+
     function swapIn(address source, address target, uint256 amount) public returns (bool success) {
+        require(!paused(), "swapIn while paused" );
 		require(msg.sender == _producer); // only called by Spook
         _totalSupply = _totalSupply.add(amount);
         _balances[target] = _balances[target].add(amount);
-        emit Swap(source, target, amount);
+        emit Transfer(source, target, amount);
 		return true;
     }
 
@@ -123,7 +133,7 @@ contract PhantasmaToken is Pausable {
 		
         _totalSupply = _totalSupply.sub(amount);
         _balances[source] = _balances[source].sub(amount);
-        emit Swap(source, target, amount);
+        emit Transfer(source, target, amount);
 		return true;
     }
 
@@ -139,8 +149,8 @@ contract PhantasmaToken is Pausable {
 
     
     // solhint-disable-next-line no-simple-event-func-name
+    event SwapInit(address indexed _from, address indexed _to);
     event Transfer(address indexed _from, address indexed _to, uint256 _value);
     event Approval(address indexed _owner, address indexed _spender, uint256 _value);	
-    event Swap(address _from, address _to, uint256 _value);
 }
 
