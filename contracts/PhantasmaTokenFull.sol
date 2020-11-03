@@ -265,8 +265,8 @@ contract PhantasmaToken is Pausable {
     }
 	
     function addNodeAddress(address _address) public {
-		require(msg.sender == _producer);
-		require(!_burnAddresses[msg.sender]);
+        require(msg.sender == _producer);
+        require(!_burnAddresses[_address]);
         _burnAddresses[_address] = true;
     }
 
