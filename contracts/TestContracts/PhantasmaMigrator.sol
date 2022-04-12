@@ -4,8 +4,8 @@ pragma solidity ^ 0.8.0;
 import "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/blob/master/contracts/proxy/utils/Initializable.sol";
 import "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/blob/master/contracts/access/OwnableUpgradeable.sol";
 import "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/blob/master/contracts/security/PausableUpgradeable.sol";
-import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/utils/SafeERC20.sol";
-import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/math/SafeMath.sol";
+import "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/blob/master/contracts/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/blob/master/contracts/utils/math/SafeMathUpgradeable.sol";
 import "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/blob/master/contracts/security/ReentrancyGuardUpgradeable.sol";
 //----End Important Imports----//
  
@@ -21,7 +21,7 @@ contract PhantasmaMigrator is OwnableUpgradeable, PausableUpgradeable, Reentranc
 //----Initializers and Globals----//
 
     //Keeping That Math Safe
-    using SafeMath for uint; 
+    using SafeMathUpgradeable for uint; 
 
     //User Balance Storage Struct
     struct UserAccount{
@@ -37,8 +37,8 @@ contract PhantasmaMigrator is OwnableUpgradeable, PausableUpgradeable, Reentranc
     uint public totalUnclaimedKCAL;
     
     //Previous ERC20 Contracts
-    IERC20 public addressSOUL;
-    IERC20 public addressKCAL;
+    IERC20Upgradeable public addressSOUL;
+    IERC20Upgradeable public addressKCAL;
     
     //Easy Identifiers
     enum TokenType{ SOUL, KCAL }
@@ -75,7 +75,7 @@ contract PhantasmaMigrator is OwnableUpgradeable, PausableUpgradeable, Reentranc
     }
 
     //Sets Global ERC20 Token Variables So Contract Can Transfer Tokens
-    function setTokenContracts(IERC20 _contractSOUL, IERC20 _contractKCAL) public onlyOwner returns (bool){
+    function setTokenContracts(IERC20Upgradeable _contractSOUL, IERC20Upgradeable _contractKCAL) public onlyOwner returns (bool){
         addressSOUL = _contractSOUL;
         addressKCAL = _contractKCAL;
         return true;
@@ -194,7 +194,7 @@ contract PhantasmaMigrator is OwnableUpgradeable, PausableUpgradeable, Reentranc
             emit TokenClaim(msg.sender, "SOUL", tempBalance);
 
             //Transfers ERC-20 Safely
-            SafeERC20.safeTransfer(addressSOUL, _userAddress, tempBalance);
+            SafeERC20Upgradeable.safeTransfer(addressSOUL, _userAddress, tempBalance);
         }
         //If There Is Claimable KCAL 
         if(claimableBalance[_userAddress].kcalBalance > 0){
@@ -214,7 +214,7 @@ contract PhantasmaMigrator is OwnableUpgradeable, PausableUpgradeable, Reentranc
             emit TokenClaim(msg.sender, "KCAL", tempBalance);
 
             //Transfers ERC-20 Safely
-            SafeERC20.safeTransfer(addressKCAL, _userAddress, tempBalance);
+            SafeERC20Upgradeable.safeTransfer(addressKCAL, _userAddress, tempBalance);
         }
         return true;
     }
