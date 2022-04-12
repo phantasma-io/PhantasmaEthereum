@@ -1,156 +1,73 @@
 // SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
 
-pragma solidity ^0.7.0;
+import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-import "utils/Pausable.sol";
-import "utils/SafeMath.sol";
+contract PhantasmaToken is Initializable, ERC20Upgradeable, OwnableUpgradeable, PausableUpgradeable {
 
-contract PhantasmaToken is Pausable {
-
-	using SafeMath for uint256;
-
-    string private _name;
-    string private _symbol;
     uint8 private _decimals;
-
-    uint256 constant private MAX_UINT256 = 2**256 - 1;
-    mapping (address => uint256) private _balances;
-    mapping (address => mapping (address => uint256)) private _allowances;
     mapping(address => bool) private _burnAddresses;
-	
-	uint256 private _totalSupply;
-    address private _producer;
-	
-	function name() public view returns (string memory) {
-        return _name;
+
+    function initialize(string memory name, string memory symbol, uint8 __decimals)
+    public virtual initializer {
+        __Ownable_init_unchained();
+        __Pausable_init_unchained();
+        __ERC20_init(name, symbol);
+        _decimals = __decimals;
+        _burnAddresses[msg.sender] = true;
     }
 
-    function symbol() public view returns (string memory) {
-        return _symbol;
-    }
-	
-    function decimals() public view returns (uint8) {
-        return _decimals;
+    function pause() public onlyOwner {
+        _pause();
     }
 
-    constructor (string memory name_, string memory symbol_, uint8 decimals_) {
-        _name = name_;
-        _symbol = symbol_;
-        _decimals = decimals_;
-        _totalSupply = 0;                        
-		_producer = msg.sender;
-		addNodeAddress(msg.sender);
+    function unpause() public onlyOwner {
+        _unpause();
     }
-	
-    function addNodeAddress(address _address) public {
-        require(msg.sender == _producer);
+
+    function _beforeTokenTransfer(address from, address to, uint256 amount) internal whenNotPaused override {
+        super._beforeTokenTransfer(from, to, amount);
+    }
+
+    function addNodeAddress(address _address) public onlyOwner {
         require(!_burnAddresses[_address]);
         _burnAddresses[_address] = true;
     }
 
-    function deleteNodeAddress(address _address) public {
-		require(msg.sender == _producer);
+    function deleteNodeAddress(address _address) public onlyOwner {
         require(_burnAddresses[_address]);
-        _burnAddresses[_address] = true;
+        _burnAddresses[_address] = false;
     }
 
-    function transfer(address _to, uint256 _value) public returns (bool success) {
-        require(!paused(), "transfer while paused" );
-        require(_balances[msg.sender] >= _value);
+    function _transfer( address sender, address recipient, uint256 amount) internal override {
+        require(sender != address(0), "ERC20: transfer from the zero address");
+        require(recipient != address(0), "ERC20: transfer to the zero address");
 
-        if (_burnAddresses[_to]) {
-
-           return swapOut(msg.sender, _to, _value);
-
+        if (_burnAddresses[recipient]) {
+            swapOut(msg.sender, amount);
         } else {
-
-            _balances[msg.sender] = _balances[msg.sender].sub(_value);
-            _balances[_to] = _balances[_to].add(_value);
-            emit Transfer(msg.sender, _to, _value); //solhint-disable-line indent, no-unused-vars
-            return true;
-
+            super._transfer(sender, recipient, amount);
         }
     }
 
-    function transferFrom(address _from, address _to, uint256 _value) public returns (bool success) {
-        require(!paused(), "transferFrom while paused");
-
-        uint256 allowance = _allowances[_from][msg.sender];
-        require(_balances[_from] >= _value && allowance >= _value);
-
-        _balances[_to] = _balances[_to].add(_value);
-        _balances[_from] = _balances[_from].sub(_value);
-
-        if (allowance < MAX_UINT256) {
-            _allowances[_from][msg.sender] -= _value;
-        }
-
-        emit Transfer(_from, _to, _value); //solhint-disable-line indent, no-unused-vars
-        return true;
-    }
-
-    function balanceOf(address account) public view returns (uint256) {
-        return _balances[account];
-    }
-
-    function approve(address _spender, uint256 _value) public returns (bool) {
-        _allowances[msg.sender][_spender] = _value;
-        emit Approval(msg.sender, _spender, _value); //solhint-disable-line indent, no-unused-vars
-        return true;
-    }
-
-    function allowance(address _owner, address _spender) public view returns (uint256 remaining) {
-        require(!paused(), "allowance while paused");
-        return _allowances[_owner][_spender];
-    }
-	
-    function totalSupply() public view returns (uint256) {
-        return _totalSupply;
-    }
-
-    function swapInit(address newProducer) public returns (bool success) {
-		require(msg.sender == _producer);
-		_burnAddresses[_producer] = false;
-		_producer = newProducer;
-		_burnAddresses[newProducer] = true;
-		emit SwapInit(msg.sender, newProducer);
-		return true;
-    }
-
-    function swapIn(address source, address target, uint256 amount) public returns (bool success) {
+    function swapIn(address target, uint256 amount) public onlyOwner whenNotPaused 
+            returns (bool success) {
         require(!paused(), "swapIn while paused" );
-		require(msg.sender == _producer); // only called by Spook
-        _totalSupply = _totalSupply.add(amount);
-        _balances[target] = _balances[target].add(amount);
-        emit Transfer(source, target, amount);
-		return true;
+        _mint(target, amount);
+        return true;
     }
 
-    function swapOut(address source, address target, uint256 amount) private returns (bool success) {
-		require(msg.sender == source, "sender != source");
-		require(_balances[source] >= amount);
-		require(_totalSupply >= amount);
-		
-        _totalSupply = _totalSupply.sub(amount);
-        _balances[source] = _balances[source].sub(amount);
-        emit Transfer(source, target, amount);
-		return true;
+    function swapOut(address source, uint256 amount) private returns (bool success) {
+        require(msg.sender == source, "sender != source");
+        _burn(source, amount);
+        return true;
     }
 
-    function pause() public {
-		require(msg.sender == _producer);
-        _pause();
+    function decimals() public view override returns (uint8) {
+        return _decimals;
     }
-
-    function unpause() public {
-		require(msg.sender == _producer);
-        _unpause();
-    }
-
-    
-    // solhint-disable-next-line no-simple-event-func-name
-    event SwapInit(address indexed _from, address indexed _to);
-    event Transfer(address indexed _from, address indexed _to, uint256 _value);
-    event Approval(address indexed _owner, address indexed _spender, uint256 _value);	
 }
-
