@@ -1,19 +1,19 @@
-pragma solidity ^ 0.8.0;
+pragma solidity ^ 0.8.4;
 
 //----Important Imports----//
-import "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/blob/master/contracts/proxy/utils/Initializable.sol";
-import "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/blob/master/contracts/access/OwnableUpgradeable.sol";
-import "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/blob/master/contracts/security/PausableUpgradeable.sol";
-import "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/blob/master/contracts/token/ERC20/utils/SafeERC20Upgradeable.sol";
-import "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/blob/master/contracts/utils/math/SafeMathUpgradeable.sol";
-import "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/blob/master/contracts/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 //----End Important Imports----//
  
 
 
 
 //Create Contract That Is Ownable, Pausable, And Has ReentrancyGuard For Security Purposes
-contract PhantasmaMigrator is OwnableUpgradeable, PausableUpgradeable, ReentrancyGuardUpgradeable {
+contract PhantasmaMigrator is Initializable, OwnableUpgradeable, PausableUpgradeable, ReentrancyGuardUpgradeable {
 
     
 
@@ -45,8 +45,7 @@ contract PhantasmaMigrator is OwnableUpgradeable, PausableUpgradeable, Reentranc
     enum MathOperation{ Addition, Deduction}
 
     //Main Initializer
-    function initialize()
-    public virtual initializer {
+    function initialize() public initializer {
         __Ownable_init_unchained();
         __Pausable_init_unchained();
         __ReentrancyGuard_init_unchained();
